@@ -1,22 +1,22 @@
-import{
-    getProducts,
-    createProduct,
-    updateProduct,
-    deleteProduct,
+import {
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 } from "../services/productService.js";
 
 import {
-    getCategories
+  getCategories
 } from "../services/categoryService.js"
 
-import{
-    uploadImageToFolder
+import {
+  uploadImageToFolder
 } from "../services/imageService.js"
 
 let currentPage = 0;
-let currentSize = 0;
+let currentSize = 10;
 
-document.addEventListener("DOMContentLoaded", ()=> {
+document.addEventListener("DOMContentLoaded", () => {
   // Referencias a elementos del DOM
   const tableBody = document.querySelector("#itemsTable tbody");
   const form = document.getElementById("productForm");
@@ -25,92 +25,94 @@ document.addEventListener("DOMContentLoaded", ()=> {
   const btnAdd = document.getElementById("btnAdd");
   const select = document.getElementById("productCategory");
   // Input type="file"
-  const imageFileInput = document.getElementById("productImageFile"); 
+  const imageFileInput = document.getElementById("productImageFile");
   // Campo hidden
-  const imageUrlHidden = document.getElementById("productImageUrl"); 
+  const imageUrlHidden = document.getElementById("productImageUrl");
   // Preview <img>  
-  const imagePreview = document.getElementById("productImagePreview"); 
+  const imagePreview = document.getElementById("productImagePreview");
 
   //Previsualizar imagen seleccionada
-  if(imageFileInput && imagePreview){
-    imageFileInput.addEventListener("change", ()=>{
-        const file = imageFileInput.files?.[0];
-        if(file){
-            const reader = new FileReader();
-            reader.onload = ()=> (imagePreview.src = reader.result); //mostrar preview
-            reader.readAsDataURL(file);
-        } else {
-            imagePreview.src = imageUrlHidden?.value || "";
-        }
+  if (imageFileInput && imagePreview) {
+    imageFileInput.addEventListener("change", () => {
+      const file = imageFileInput.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = () => (imagePreview.src = reader.result); //mostrar preview
+        reader.readAsDataURL(file);
+      } else {
+        imagePreview.src = imageUrlHidden?.value || "";
+      }
     });
   }
 
   const sizeSelector = document.getElementById("pageSize");
-  sizeSelector.addEventListener("change", ()=> {
+  sizeSelector.addEventListener("change", () => {
     currentSize = parseInt(sizeSelector.value);
     currentPage = 0;
     cargarProductos();
   });
 
   //6. Boton "Agregar" resetea formulario y abre modal
-  btnAdd.addEventListener("click", ()=> {
+  btnAdd.addEventListener("click", () => {
     limpiarFormulario();
     modalLabel.textContent = "Agregar Producto";
     modal.show();
   });
 
   //7. Submit del formulario (Crear/Actualizar productos)
-  form.addEventListener("submit", async (e) =>{
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     let id = form.productId.value;
 
     //8. Manejo de l imagen: usasr valor actual o subir nueva
     let finalImageUrl = imageUrlHidden?.value || "";
     const file = imageFileInput?.files?.[0];
-    if(file){
-        try{
-            //Subir imagen al backend
-            const data = await uploadImageToFolder(file, "products");
-            finalImageUrl = data.url || "";
-        } catch (err){
-            console.log("Error subiendo la imagen", err);
-            alert("No se pudo subir la imagen.Intenta nuevamente");
-            return; //Si falla la subida, no guardamos el producto
-        }
+    if (file) {
+      try {
+        //Subir imagen al backend
+        const data = await uploadImageToFolder(file, "products");
+        finalImageUrl = data.url || "";
+      } catch (err) {
+        console.log("Error subiendo la imagen", err);
+        alert("No se pudo subir la imagen. Intenta nuevamente");
+        return; //Si falla la subida, no guardamos el producto
+      }
     }
     //Construccion del payload para enviar a API
     const payload = {
-        nombre: form.productName.value.trim(),
-        precio: Number(form.productPrice.value),
-        descripcion: form.productDescription.value.trim(),
-        stock: Number(form.productStock.value),
-        fechaIngreso: form.productDate.value,
-        categoriaId: Number(form.productCategory.value),
-        usuarioId: 2, //Por ahora fijo
-        imagen_url: finalImageUrl || null,
+      nombre: form.productName.value.trim(),
+      precio: Number(form.productPrice.value),
+      descripcion: form.productDescription.value.trim(),
+      stock: Number(form.productStock.value),
+      fechaIngreso: form.productDate.value,
+      categoriaId: Number(form.productCategory.value),
+      usuarioId: 2, //Por ahora fijo
+      imagen_url: finalImageUrl || null,
     };
 
-    try{
-        if(id) {
-            await updateProduct(id, payload);
-        } else {
-            await createProduct(payload);
-        }
-        modal.hide();
-        await cargarProductos();
-    } catch(err){
-        console.log("Error guardando", err);
-        alert("Ocurrio un error al guardar el producto");
+    try {
+      if (id) {
+        await updateProduct(id, payload);
+      } else {
+        await createProduct(payload);
+      }
+      modal.hide();
+      await cargarProductos();
+    } catch (err) {
+      console.log("Error guardando", err);
+      alert("Ocurrio un error al guardar el producto");
     }
   });
 
-   // --- 11. Función para cargar productos con paginación ---
+  // --- 11. Función para cargar productos con paginación ---
   async function cargarProductos() {
     try {
 
       //Aquí mandamos a traer productos del backend. 
       // Le indicamos la cantidad de registros y la página actual.
       const data = await getProducts(currentPage, currentSize);
+      //alert(sizeSelector.value);
+
       const items = data.content || [];
 
       //Limpiamos la tabla antes de llenarla.
@@ -209,28 +211,28 @@ document.addEventListener("DOMContentLoaded", ()=> {
 
   //13. Cargar categorias para <select>
   async function cargarCategorias() {
-    try{
-        const categories = await getCategories();
-        select.innerHTML = "";
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.disabled = true;
-        opt.selected = true;
-        opt.hidden = true;
-        opt.textContent = "Seleccione...";
-        select.appendChild(opt);
+    try {
+      const categories = await getCategories();
+      select.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "";
+      opt.disabled = true;
+      opt.selected = true;
+      opt.hidden = true;
+      opt.textContent = "Seleccione...";
+      select.appendChild(opt);
 
-        categories.forEach((c) => {
-            const option = document.createElement("option");
-            option.value = c.idCategoria;
-            option.textContent = c.nombreCategoria;
-            option.title = c.descripcion;
-            select.appendChild(option);
-        });
-    } catch(err){
-        console.error("Error cargado categogrias", err)
+      categories.forEach((c) => {
+        const option = document.createElement("option");
+        option.value = c.idCategoria;
+        option.textContent = c.nombreCategoria;
+        option.title = c.descripcion;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Error cargado categogrias", err)
     }
-    
+
   }
 
   //14 Rellenar formulario para editar producto
@@ -243,101 +245,101 @@ document.addEventListener("DOMContentLoaded", ()=> {
     form.productCategory.value = item.categoriaId;
     form.productDate.value = item.fechaIngreso;
 
-    if(imageUrlHidden) imageUrlHidden.value = item.imagen_url || "";
-    if(imagePreview) imagePreview.src = item.imagen_url || "";
-    if(imageFileInput) imageFileInput.value = "";
+    if (imageUrlHidden) imageUrlHidden.value = item.imagen_url || "";
+    if (imagePreview) imagePreview.src = item.imagen_url || "";
+    if (imageFileInput) imageFileInput.value = "";
 
     modalLabel.textContent = "Editar Producto";
     modal.show();
   }
 
   //15 Resetear formulario al agregar nuevo producto
-  function limpiarFormulario(){
+  function limpiarFormulario() {
     form.reset();
     form.productId.value = "";
-    if(imageUrlHidden) imageUrlHidden.value = "";
-    if(imagePreview) imagePreview.src = "";
-    if(imageFileInput) imageFileInput.value = "";
+    if (imageUrlHidden) imageUrlHidden.value = "";
+    if (imagePreview) imagePreview.src = "";
+    if (imageFileInput) imageFileInput.value = "";
   }
 
   //16. Eliminar los productos por Id
-  async function eliminarProducto(id){ 
-  try{
-    await deleteProduct(id);
-    await cargarProductos();
-    
-  }catch(err){
-    console.log("Error elimnando", err)
-  }
- }
+  async function eliminarProducto(id) {
+    try {
+      await deleteProduct(id);
+      await cargarProductos();
 
-
- // --- 17. Renderizado de paginación ---
-function renderPagination(current, totalPages) {
-  const pagination = document.getElementById("pagination");
-  pagination.innerHTML = ""; // Limpiamos el contenedor antes de dibujar los botones
-
-  // --- Botón "Anterior" ---
-  const prev = document.createElement("li");
-  // Si estamos en la primera página (current === 0), se desactiva el botón
-  prev.className = `page-item ${current === 0 ? "disabled" : ""}`;
-  
-  const prevLink = document.createElement("a");
-  prevLink.className = "page-link"; // Clase de Bootstrap para darle estilo
-  prevLink.href = "#"; // No redirige a otra página
-  prevLink.textContent = "Anterior"; // Texto visible en el botón
-  prevLink.addEventListener("click", (e) => {
-    e.preventDefault(); // Evita que el enlace recargue la página
-    if (current > 0) { 
-      currentPage = current - 1; // Retrocedemos una página
-      cargarProductos();         // Y recargamos los productos
+    } catch (err) {
+      console.log("Error elimnando", err)
     }
-  });
-  prev.appendChild(prevLink); // Metemos el <a> dentro del <li>
-  pagination.appendChild(prev); // Agregamos el botón al paginador
+  }
 
-  // --- Botones numéricos ---
-  for (let i = 0; i < totalPages; i++) {
-    const li = document.createElement("li");
-    // Si "i" es la página actual, se marca como "active"
-    li.className = `page-item ${i === current ? "active" : ""}`;
-    
-    const link = document.createElement("a");
-    link.className = "page-link";
-    link.href = "#";
-    link.textContent = i + 1; // Mostramos número de página (1, 2, 3, …)
-    link.addEventListener("click", (e) => {
+
+  // --- 17. Renderizado de paginación ---
+  function renderPagination(current, totalPages) {
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = ""; // Limpiamos el contenedor antes de dibujar los botones
+
+    // --- Botón "Anterior" ---
+    const prev = document.createElement("li");
+    // Si estamos en la primera página (current === 0), se desactiva el botón
+    prev.className = `page-item ${current === 0 ? "disabled" : ""}`;
+
+    const prevLink = document.createElement("a");
+    prevLink.className = "page-link"; // Clase de Bootstrap para darle estilo
+    prevLink.href = "#"; // No redirige a otra página
+    prevLink.textContent = "Anterior"; // Texto visible en el botón
+    prevLink.addEventListener("click", (e) => {
+      e.preventDefault(); // Evita que el enlace recargue la página
+      if (current > 0) {
+        currentPage = current - 1; // Retrocedemos una página
+        cargarProductos();         // Y recargamos los productos
+      }
+    });
+    prev.appendChild(prevLink); // Metemos el <a> dentro del <li>
+    pagination.appendChild(prev); // Agregamos el botón al paginador
+
+    // --- Botones numéricos ---
+    for (let i = 0; i < totalPages; i++) {
+      const li = document.createElement("li");
+      // Si "i" es la página actual, se marca como "active"
+      li.className = `page-item ${i === current ? "active" : ""}`;
+
+      const link = document.createElement("a");
+      link.className = "page-link";
+      link.href = "#";
+      link.textContent = i + 1; // Mostramos número de página (1, 2, 3, …)
+      link.addEventListener("click", (e) => {
+        e.preventDefault();
+        currentPage = i; // Cambiamos la página actual al número clicado
+        cargarProductos(); // Volvemos a pedir productos de esa página
+      });
+
+      li.appendChild(link);
+      pagination.appendChild(li);
+    }
+
+    // --- Botón "Siguiente" ---
+    const next = document.createElement("li");
+    // Se desactiva si ya estamos en la última página
+    next.className = `page-item ${current >= totalPages - 1 ? "disabled" : ""}`;
+
+    const nextLink = document.createElement("a");
+    nextLink.className = "page-link";
+    nextLink.href = "#";
+    nextLink.textContent = "Siguiente";
+    nextLink.addEventListener("click", (e) => {
       e.preventDefault();
-      currentPage = i; // Cambiamos la página actual al número clicado
-      cargarProductos(); // Volvemos a pedir productos de esa página
+      if (current < totalPages - 1) {
+        currentPage = current + 1; // Avanzamos una página
+        cargarProductos();         // Y actualizamos los productos
+      }
     });
 
-    li.appendChild(link);
-    pagination.appendChild(li);
+    next.appendChild(nextLink);
+    pagination.appendChild(next);
   }
 
-  // --- Botón "Siguiente" ---
-  const next = document.createElement("li");
-  // Se desactiva si ya estamos en la última página
-  next.className = `page-item ${current >= totalPages - 1 ? "disabled" : ""}`;
-  
-  const nextLink = document.createElement("a");
-  nextLink.className = "page-link";
-  nextLink.href = "#";
-  nextLink.textContent = "Siguiente";
-  nextLink.addEventListener("click", (e) => {
-    e.preventDefault();
-    if (current < totalPages - 1) {
-      currentPage = current + 1; // Avanzamos una página
-      cargarProductos();         // Y actualizamos los productos
-    }
-  });
-
-  next.appendChild(nextLink);
-  pagination.appendChild(next);
-}
-
- cargarCategorias();
- cargarProductos();
+  cargarCategorias();
+  cargarProductos();
 
 });
